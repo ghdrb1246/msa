@@ -6,13 +6,15 @@ import lombok.Setter;
 @Getter
 @Setter
 public class RecommendationSummary {
-    private int recommendationId;
-    private String author;
-    private int rate;
+    private final int recommendationId;
+    private final String author;
+    private final int rate;
+    private final String content;
 
-    public RecommendationSummary(int recommendationId, String author, int rate) {
+    public RecommendationSummary(int recommendationId, String author, int rate, String content) {
         this.recommendationId = recommendationId;
         this.author = author;
         this.rate = rate;
+        this.content = content;
     }
 }
