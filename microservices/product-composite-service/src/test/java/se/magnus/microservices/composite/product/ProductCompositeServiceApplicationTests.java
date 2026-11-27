@@ -150,11 +150,11 @@ class ProductCompositeServiceApplicationTests {
 	private void postAndVerifyProduct(ProductAggregate body) {
 		client.post().uri("/product-composite")
 				.contentType(APPLICATION_JSON).bodyValue(body)
-				.exchange().expectStatus().isOk().expectBody().isEmpty();
+				.exchange().expectStatus().isAccepted().expectBody().isEmpty();
 	}
 
 	private void deleteAndVerifyProduct(int productId) {
 		client.delete().uri("/product-composite/" + productId)
-				.exchange().expectStatus().isOk().expectBody().isEmpty();
+				.exchange().expectStatus().isAccepted().expectBody().isEmpty();
 	}
 }

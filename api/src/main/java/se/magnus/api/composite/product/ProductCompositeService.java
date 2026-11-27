@@ -1,6 +1,8 @@
 package se.magnus.api.composite.product;
 
 import reactor.core.publisher.Mono;
+import static org.springframework.http.HttpStatus.ACCEPTED;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -38,9 +40,11 @@ public interface ProductCompositeService {
             summary = "${api.product-composite.create-composite-product.description}",
             description = "${api.product-composite.create-composite-product.notes}")
     @ApiResponses(value = {
+            @ApiResponse(responseCode = "202", description = "${api.responseCodes.accepted.description}"),
             @ApiResponse(responseCode = "400", description = "${api.responseCodes.badRequest.description}"),
             @ApiResponse(responseCode = "422", description = "${api.responseCodes.unprocessableEntity.description}")
     })
+    @ResponseStatus(ACCEPTED)
     @PostMapping(value = "/product-composite", consumes = "application/json")
     Mono<Void> createProduct(@RequestBody ProductAggregate body);
 
@@ -48,9 +52,11 @@ public interface ProductCompositeService {
             summary = "${api.product-composite.delete-composite-product.description}",
             description = "${api.product-composite.delete-composite-product.notes}")
     @ApiResponses(value = {
+            @ApiResponse(responseCode = "202", description = "${api.responseCodes.accepted.description}"),
             @ApiResponse(responseCode = "400", description = "${api.responseCodes.badRequest.description}"),
             @ApiResponse(responseCode = "422", description = "${api.responseCodes.unprocessableEntity.description}")
     })
+    @ResponseStatus(ACCEPTED)
     @DeleteMapping(value = "/product-composite/{productId}")
     Mono<Void> deleteProduct(@PathVariable int productId);
 }

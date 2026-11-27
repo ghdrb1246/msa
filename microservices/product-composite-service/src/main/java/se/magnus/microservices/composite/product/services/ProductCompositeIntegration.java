@@ -1,10 +1,18 @@
 package se.magnus.microservices.composite.product.services;
 
 import static java.util.logging.Level.FINE;
+import static se.magnus.api.event.Event.Type.CREATE;
+import static se.magnus.api.event.Event.Type.DELETE;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cloud.stream.function.StreamBridge;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.support.MessageBuilder;
+import reactor.core.scheduler.Scheduler;
+import se.magnus.api.event.Event;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -25,19 +33,25 @@ import tools.jackson.databind.ObjectMapper;
 @Component
 public class ProductCompositeIntegration implements ProductService, RecommendationService, ReviewService {
     private static final Logger LOG = LoggerFactory.getLogger(ProductCompositeIntegration.class);
+    private final StreamBridge streamBridge;
+    private final Scheduler publishEventScheduler;
     private final WebClient webClient;
     private final ObjectMapper mapper;
     private final String productServiceUrl;
     private final String recommendationServiceUrl;
     private final String reviewServiceUrl;
 
-    public ProductCompositeIntegration(WebClient.Builder webClient, ObjectMapper mapper,
+    public ProductCompositeIntegration(StreamBridge streamBridge,
+                                       @Qualifier("publishEventScheduler") Scheduler publishEventScheduler,
+                                       WebClient.Builder webClient, ObjectMapper mapper,
                                        @Value("${app.product-service.host}") String productServiceHost,
                                        @Value("${app.product-service.port}") int productServicePort,
                                        @Value("${app.recommendation-service.host}") String recommendationServiceHost,
                                        @Value("${app.recommendation-service.port}") int recommendationServicePort,
                                        @Value("${app.review-service.host}") String reviewServiceHost,
                                        @Value("${app.review-service.port}") int reviewServicePort) {
+        this.streamBridge = streamBridge;
+        this.publishEventScheduler = publishEventScheduler;
         this.webClient = webClient.build();
         this.mapper = mapper;
         productServiceUrl = "http://" + productServiceHost + ":" + productServicePort;
@@ -71,44 +85,54 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
 
     @Override
     public Mono<Product> createProduct(Product body) {
-        return webClient.post().uri(productServiceUrl + "/product").bodyValue(body)
-                .retrieve().bodyToMono(Product.class)
-                .onErrorMap(WebClientResponseException.class, this::handleException);
-    }
-
-    @Override
-    public Mono<Recommendation> createRecommendation(Recommendation body) {
-        return webClient.post().uri(recommendationServiceUrl + "/recommendation").bodyValue(body)
-                .retrieve().bodyToMono(Recommendation.class)
-                .onErrorMap(WebClientResponseException.class, this::handleException);
-    }
-
-    @Override
-    public Mono<Review> createReview(Review body) {
-        return webClient.post().uri(reviewServiceUrl + "/review").bodyValue(body)
-                .retrieve().bodyToMono(Review.class)
-                .onErrorMap(WebClientResponseException.class, this::handleException);
+        return Mono.fromCallable(() -> {
+            sendMessage("products-out-0", new Event<>(CREATE, body.getProductId(), body));
+            return body;
+        }).subscribeOn(publishEventScheduler);
     }
 
     @Override
     public Mono<Void> deleteProduct(int productId) {
-        return webClient.delete().uri(productServiceUrl + "/product/" + productId)
-                .retrieve().bodyToMono(Void.class)
-                .onErrorMap(WebClientResponseException.class, this::handleException);
+        return Mono.fromRunnable(() ->
+                        sendMessage("products-out-0", new Event<>(DELETE, productId, null)))
+                .subscribeOn(publishEventScheduler).then();
+    }
+
+    @Override
+    public Mono<Recommendation> createRecommendation(Recommendation body) {
+        return Mono.fromCallable(() -> {
+            sendMessage("recommendations-out-0", new Event<>(CREATE, body.getProductId(), body));
+            return body;
+        }).subscribeOn(publishEventScheduler);
     }
 
     @Override
     public Mono<Void> deleteRecommendations(int productId) {
-        return webClient.delete().uri(recommendationServiceUrl + "/recommendation?productId=" + productId)
-                .retrieve().bodyToMono(Void.class)
-                .onErrorMap(WebClientResponseException.class, this::handleException);
+        return Mono.fromRunnable(() ->
+                        sendMessage("recommendations-out-0", new Event<>(DELETE, productId, null)))
+                .subscribeOn(publishEventScheduler).then();
+    }
+
+    @Override
+    public Mono<Review> createReview(Review body) {
+        return Mono.fromCallable(() -> {
+            sendMessage("reviews-out-0", new Event<>(CREATE, body.getProductId(), body));
+            return body;
+        }).subscribeOn(publishEventScheduler);
     }
 
     @Override
     public Mono<Void> deleteReviews(int productId) {
-        return webClient.delete().uri(reviewServiceUrl + "/review?productId=" + productId)
-                .retrieve().bodyToMono(Void.class)
-                .onErrorMap(WebClientResponseException.class, this::handleException);
+        return Mono.fromRunnable(() ->
+                        sendMessage("reviews-out-0", new Event<>(DELETE, productId, null)))
+                .subscribeOn(publishEventScheduler).then();
+    }
+
+    private void sendMessage(String bindingName, Event<?, ?> event) {
+        Message<Event<?, ?>> message = MessageBuilder.<Event<?, ?>>withPayload(event)
+                .setHeader("partitionKey", event.getKey())
+                .build();
+        streamBridge.send(bindingName, message);
     }
 
     private Throwable handleException(WebClientResponseException ex) {
