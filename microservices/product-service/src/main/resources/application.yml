@@ -7,12 +7,19 @@ logging:
     root: INFO
     se.magnus: DEBUG
 
+spring:
+  mongodb:
+    host: localhost
+    port: 27017
+    database: product-db
+  data:
+    mongodb:
+      auto-index-creation: true
+
+logging.level.org.springframework.data.mongodb.core.MongoTemplate: DEBUG
+
 ---
 
-spring:
-  config:
-    activate:
-      on-profile: docker
-
-server:
-  port: 8080
+spring.config.activate.on-profile: docker
+server.port: 8080
+spring.mongodb.host: mongodb
