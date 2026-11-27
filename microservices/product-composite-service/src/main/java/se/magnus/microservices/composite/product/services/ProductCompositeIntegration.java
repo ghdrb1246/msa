@@ -7,6 +7,7 @@ import static se.magnus.api.event.Event.Type.DELETE;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.health.contributor.Health;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.messaging.Message;
@@ -133,6 +134,27 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
                 .setHeader("partitionKey", event.getKey())
                 .build();
         streamBridge.send(bindingName, message);
+    }
+
+    public Mono<Health> getProductHealth() {
+        return getHealth(productServiceUrl);
+    }
+
+    public Mono<Health> getRecommendationHealth() {
+        return getHealth(recommendationServiceUrl);
+    }
+
+    public Mono<Health> getReviewHealth() {
+        return getHealth(reviewServiceUrl);
+    }
+
+    private Mono<Health> getHealth(String url) {
+        url += "/actuator/health";
+        LOG.debug("Will call the Health API on URL: {}", url);
+        return webClient.get().uri(url).retrieve().bodyToMono(String.class)
+                .map(s -> new Health.Builder().up().build())
+                .onErrorResume(ex -> Mono.just(new Health.Builder().down(ex).build()))
+                .log(LOG.getName(), FINE);
     }
 
     private Throwable handleException(WebClientResponseException ex) {

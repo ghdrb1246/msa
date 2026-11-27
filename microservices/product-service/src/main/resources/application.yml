@@ -1,3 +1,6 @@
+management.endpoint.health.show-details: always
+management.endpoints.web.exposure.include: "*"
+
 server.port: 7002
 spring.web.error.include-message: always
 spring.data.mongodb.auto-index-creation: true

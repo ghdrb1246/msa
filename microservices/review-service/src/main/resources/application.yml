@@ -1,3 +1,6 @@
+management.endpoint.health.show-details: always
+management.endpoints.web.exposure.include: "*"
+
 server:
   port: 7004
 spring.web.error.include-message: always

@@ -15,19 +15,27 @@ java {
 
 ext {
 	mapstructVersion = '1.6.3'
+	springCloudVersion = '2025.1.4'
 }
 
 repositories {
 	mavenCentral()
 }
 
+jar {
+	enabled = false
+}
+
 dependencies {
-	implementation project(':api')
-	implementation project(':util')
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+	implementation project(':api')
+	implementation project(':util')
+
 	testImplementation 'org.springframework.boot:spring-boot-starter-actuator-test'
 	testImplementation 'org.springframework.boot:spring-boot-starter-webflux-test'
+	testImplementation 'io.projectreactor:reactor-test'
+
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
 	implementation 'org.projectlombok:lombok'
@@ -47,12 +55,17 @@ dependencies {
 	testImplementation 'org.testcontainers:testcontainers-mysql'
 	testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
 
+	implementation 'org.springframework.cloud:spring-cloud-starter-stream-rabbit'
+	implementation 'org.springframework.cloud:spring-cloud-starter-stream-kafka'
+	testImplementation 'org.springframework.cloud:spring-cloud-stream-test-binder'
+}
+
+dependencyManagement {
+	imports {
+		mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+	}
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
-}
-
-jar {
-	enabled = false
 }
