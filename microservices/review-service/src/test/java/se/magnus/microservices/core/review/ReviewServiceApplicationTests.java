@@ -4,7 +4,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT;
 import static org.springframework.http.HttpStatus.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
-import static reactor.core.publisher.Mono.just;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static se.magnus.api.event.Event.Type.CREATE;
+import static se.magnus.api.event.Event.Type.DELETE;
+
+import java.util.function.Consumer;
+import org.springframework.beans.factory.annotation.Qualifier;
+import se.magnus.api.event.Event;
+import se.magnus.api.exceptions.InvalidInputException;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,14 +24,21 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 import se.magnus.api.core.review.Review;
 import se.magnus.microservices.core.review.persistence.ReviewRepository;
 
-@SpringBootTest(webEnvironment = RANDOM_PORT, properties = "spring.jpa.hibernate.ddl-auto=create-drop")
+@SpringBootTest(webEnvironment = RANDOM_PORT, properties = {
+		"spring.jpa.hibernate.ddl-auto=create-drop",
+		"spring.cloud.stream.function.autodetect=false"})
 @AutoConfigureWebTestClient
 class ReviewServiceApplicationTests extends MySqlTestBase {
+
 	@Autowired
 	private WebTestClient client;
 
 	@Autowired
 	private ReviewRepository repository;
+
+	@Autowired
+	@Qualifier("messageProcessor")
+	private Consumer<Event<Integer, Review>> messageProcessor;
 
 	@BeforeEach
 	void setupDb() {
@@ -32,13 +47,14 @@ class ReviewServiceApplicationTests extends MySqlTestBase {
 
 	@Test
 	void getReviewsByProductId() {
+
 		int productId = 1;
 
 		assertEquals(0, repository.findByProductId(productId).size());
 
-		postAndVerifyReview(productId, 1, OK);
-		postAndVerifyReview(productId, 2, OK);
-		postAndVerifyReview(productId, 3, OK);
+		sendCreateReviewEvent(productId, 1);
+		sendCreateReviewEvent(productId, 2);
+		sendCreateReviewEvent(productId, 3);
 
 		assertEquals(3, repository.findByProductId(productId).size());
 
@@ -52,38 +68,32 @@ class ReviewServiceApplicationTests extends MySqlTestBase {
 	void duplicateError() {
 		int productId = 1;
 		int reviewId = 1;
-
-		assertEquals(0, repository.count());
-
-		postAndVerifyReview(productId, reviewId, OK)
-				.jsonPath("$.productId").isEqualTo(productId)
-				.jsonPath("$.reviewId").isEqualTo(reviewId);
-
+		sendCreateReviewEvent(productId, reviewId);
 		assertEquals(1, repository.count());
-
-		postAndVerifyReview(productId, reviewId, UNPROCESSABLE_CONTENT)
-				.jsonPath("$.path").isEqualTo("/review")
-				.jsonPath("$.message").isEqualTo("Duplicate key, Product Id: 1, Review Id: 1");
-
+		InvalidInputException ex = assertThrows(InvalidInputException.class,
+				() -> sendCreateReviewEvent(productId, reviewId));
+		assertEquals("Duplicate key, Product Id: 1, Review Id:1", ex.getMessage());
 		assertEquals(1, repository.count());
 	}
 
 	@Test
 	void deleteReviews() {
+
 		int productId = 1;
 		int reviewId = 1;
 
-		postAndVerifyReview(productId, reviewId, OK);
+		sendCreateReviewEvent(productId, reviewId);
 		assertEquals(1, repository.findByProductId(productId).size());
 
-		deleteAndVerifyReviewsByProductId(productId, OK);
+		sendDeleteReviewEvent(productId);
 		assertEquals(0, repository.findByProductId(productId).size());
 
-		deleteAndVerifyReviewsByProductId(productId, OK);
+		sendDeleteReviewEvent(productId);
 	}
 
 	@Test
 	void getReviewsMissingParameter() {
+
 		getAndVerifyReviewsByProductId("", BAD_REQUEST)
 				.jsonPath("$.path").isEqualTo("/review")
 				.jsonPath("$.message").isEqualTo("Required query parameter 'productId' is not present.");
@@ -91,6 +101,7 @@ class ReviewServiceApplicationTests extends MySqlTestBase {
 
 	@Test
 	void getReviewsInvalidParameter() {
+
 		getAndVerifyReviewsByProductId("?productId=no-integer", BAD_REQUEST)
 				.jsonPath("$.path").isEqualTo("/review")
 				.jsonPath("$.message").isEqualTo("Type mismatch.");
@@ -98,12 +109,14 @@ class ReviewServiceApplicationTests extends MySqlTestBase {
 
 	@Test
 	void getReviewsNotFound() {
+
 		getAndVerifyReviewsByProductId("?productId=213", OK)
 				.jsonPath("$.length()").isEqualTo(0);
 	}
 
 	@Test
 	void getReviewsInvalidParameterNegativeValue() {
+
 		int productIdInvalid = -1;
 
 		getAndVerifyReviewsByProductId("?productId=" + productIdInvalid, UNPROCESSABLE_CONTENT)
@@ -125,24 +138,14 @@ class ReviewServiceApplicationTests extends MySqlTestBase {
 				.expectBody();
 	}
 
-	private WebTestClient.BodyContentSpec postAndVerifyReview(int productId, int reviewId, HttpStatus expectedStatus) {
+	private void sendCreateReviewEvent(int productId, int reviewId) {
 		Review review = new Review(productId, reviewId, "Author " + reviewId, "Subject " + reviewId, "Content " + reviewId, "SA");
-		return client.post()
-				.uri("/review")
-				.body(just(review), Review.class)
-				.accept(APPLICATION_JSON)
-				.exchange()
-				.expectStatus().isEqualTo(expectedStatus)
-				.expectHeader().contentType(APPLICATION_JSON)
-				.expectBody();
+		Event<Integer, Review> event = new Event<>(CREATE, productId, review);
+		messageProcessor.accept(event);
 	}
 
-	private WebTestClient.BodyContentSpec deleteAndVerifyReviewsByProductId(int productId, HttpStatus expectedStatus) {
-		return client.delete()
-				.uri("/review?productId=" + productId)
-				.accept(APPLICATION_JSON)
-				.exchange()
-				.expectStatus().isEqualTo(expectedStatus)
-				.expectBody();
+	private void sendDeleteReviewEvent(int productId) {
+		Event<Integer, Review> event = new Event<>(DELETE, productId, null);
+		messageProcessor.accept(event);
 	}
 }
