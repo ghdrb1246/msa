@@ -20,33 +20,36 @@ import se.magnus.microservices.core.product.persistence.ProductRepository;
 @SpringBootTest(webEnvironment = RANDOM_PORT)
 @AutoConfigureWebTestClient
 class ProductServiceApplicationTests extends MongoDbTestBase {
-	@Autowired
-	private WebTestClient client;
 
-	@Autowired
-	private ProductRepository repository;
+	@Autowired private WebTestClient client;
+
+	@Autowired private ProductRepository repository;
 
 	@BeforeEach
 	void setupDb() {
-		repository.deleteAll();
+		repository.deleteAll().block();
 	}
 
 	@Test
 	void getProductById() {
+
 		int productId = 1;
 
 		postAndVerifyProduct(productId, OK);
-		assertTrue(repository.findByProductId(productId).isPresent());
+
+		assertTrue(repository.findByProductId(productId).blockOptional().isPresent());
 
 		getAndVerifyProduct(productId, OK).jsonPath("$.productId").isEqualTo(productId);
 	}
 
 	@Test
 	void duplicateError() {
+
 		int productId = 1;
 
 		postAndVerifyProduct(productId, OK);
-		assertTrue(repository.findByProductId(productId).isPresent());
+
+		assertTrue(repository.findByProductId(productId).blockOptional().isPresent());
 
 		postAndVerifyProduct(productId, UNPROCESSABLE_CONTENT)
 				.jsonPath("$.path").isEqualTo("/product")
@@ -55,19 +58,21 @@ class ProductServiceApplicationTests extends MongoDbTestBase {
 
 	@Test
 	void deleteProduct() {
+
 		int productId = 1;
 
 		postAndVerifyProduct(productId, OK);
-		assertTrue(repository.findByProductId(productId).isPresent());
+		assertTrue(repository.findByProductId(productId).blockOptional().isPresent());
 
 		deleteAndVerifyProduct(productId, OK);
-		assertFalse(repository.findByProductId(productId).isPresent());
+		assertFalse(repository.findByProductId(productId).blockOptional().isPresent());
 
 		deleteAndVerifyProduct(productId, OK);
 	}
 
 	@Test
 	void getProductInvalidParameterString() {
+
 		getAndVerifyProduct("/no-integer", BAD_REQUEST)
 				.jsonPath("$.path").isEqualTo("/product/no-integer")
 				.jsonPath("$.message").isEqualTo("Type mismatch.");
@@ -75,8 +80,8 @@ class ProductServiceApplicationTests extends MongoDbTestBase {
 
 	@Test
 	void getProductNotFound() {
-		int productIdNotFound = 13;
 
+		int productIdNotFound = 13;
 		getAndVerifyProduct(productIdNotFound, NOT_FOUND)
 				.jsonPath("$.path").isEqualTo("/product/" + productIdNotFound)
 				.jsonPath("$.message").isEqualTo("No product found for productId: " + productIdNotFound);
@@ -84,6 +89,7 @@ class ProductServiceApplicationTests extends MongoDbTestBase {
 
 	@Test
 	void getProductInvalidParameterNegativeValue() {
+
 		int productIdInvalid = -1;
 
 		getAndVerifyProduct(productIdInvalid, UNPROCESSABLE_CONTENT)
