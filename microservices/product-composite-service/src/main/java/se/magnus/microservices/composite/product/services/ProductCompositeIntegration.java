@@ -121,7 +121,7 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
 
             LOG.debug("Will call getRecommendations API on URL: {}", url);
             List<Recommendation> recommendations = restTemplate
-                    .exchange(url, HttpMethod.GET, null, new ParameterizedTypeReference<List<Recommendation>>() {})
+                    .exchange(url, GET, null, new ParameterizedTypeReference<List<Recommendation>>() {})
                     .getBody();
 
             LOG.debug("Found {} recommendations for a product with id: {}", recommendations.size(), productId);
@@ -171,7 +171,7 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
 
             LOG.debug("Will call getReviews API on URL: {}", url);
             List<Review> reviews = restTemplate
-                    .exchange(url, HttpMethod.GET, null, new ParameterizedTypeReference<List<Review>>() {})
+                    .exchange(url, GET, null, new ParameterizedTypeReference<List<Review>>() {})
                     .getBody();
 
             LOG.debug("Found {} reviews for a product with id: {}", reviews.size(), productId);
