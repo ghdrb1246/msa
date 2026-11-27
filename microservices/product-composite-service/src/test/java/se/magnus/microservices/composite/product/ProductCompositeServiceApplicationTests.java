@@ -9,6 +9,8 @@ import static org.springframework.boot.test.context.SpringBootTest.WebEnvironmen
 import static org.springframework.http.HttpStatus.UNPROCESSABLE_CONTENT;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
+import reactor.core.publisher.Mono;
+import reactor.core.publisher.Flux;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,30 +31,43 @@ import se.magnus.microservices.composite.product.services.ProductCompositeIntegr
 @SpringBootTest(webEnvironment = RANDOM_PORT)
 @AutoConfigureWebTestClient
 class ProductCompositeServiceApplicationTests {
+
 	private static final int PRODUCT_ID_OK = 1;
 	private static final int PRODUCT_ID_NOT_FOUND = 2;
 	private static final int PRODUCT_ID_INVALID = 3;
 
-	@Autowired
-	private WebTestClient client;
+	@Autowired private WebTestClient client;
 
-	@MockitoBean
-	private ProductCompositeIntegration compositeIntegration;
+	@MockitoBean private ProductCompositeIntegration compositeIntegration;
 
 	@BeforeEach
 	void setUp() {
+		when(compositeIntegration.getRecommendations(org.mockito.ArgumentMatchers.anyInt())).thenReturn(Flux.empty());
+		when(compositeIntegration.getReviews(org.mockito.ArgumentMatchers.anyInt())).thenReturn(Flux.empty());
+
 		when(compositeIntegration.getProduct(PRODUCT_ID_OK))
-				.thenReturn(new Product(PRODUCT_ID_OK, "name", 1, "mock-address"));
+				.thenReturn(Mono.just(new Product(PRODUCT_ID_OK, "name", 1, "mock-address")));
 		when(compositeIntegration.getRecommendations(PRODUCT_ID_OK))
-				.thenReturn(singletonList(new Recommendation(PRODUCT_ID_OK, 1, "author", 1, "content", "mock address")));
+				.thenReturn(Flux.just(new Recommendation(PRODUCT_ID_OK, 1, "author", 1, "content", "mock address")));
 		when(compositeIntegration.getReviews(PRODUCT_ID_OK))
-				.thenReturn(singletonList(new Review(PRODUCT_ID_OK, 1, "author", "subject", "content", "mock address")));
+				.thenReturn(Flux.just(new Review(PRODUCT_ID_OK, 1, "author", "subject", "content", "mock address")));
+
+
+		when(compositeIntegration.createProduct(any(Product.class)))
+				.thenAnswer(invocation -> Mono.just(invocation.getArgument(0, Product.class)));
+		when(compositeIntegration.createRecommendation(any(Recommendation.class)))
+				.thenAnswer(invocation -> Mono.just(invocation.getArgument(0, Recommendation.class)));
+		when(compositeIntegration.createReview(any(Review.class)))
+				.thenAnswer(invocation -> Mono.just(invocation.getArgument(0, Review.class)));
+		when(compositeIntegration.deleteProduct(org.mockito.ArgumentMatchers.anyInt())).thenReturn(Mono.empty());
+		when(compositeIntegration.deleteRecommendations(org.mockito.ArgumentMatchers.anyInt())).thenReturn(Mono.empty());
+		when(compositeIntegration.deleteReviews(org.mockito.ArgumentMatchers.anyInt())).thenReturn(Mono.empty());
 
 		when(compositeIntegration.getProduct(PRODUCT_ID_NOT_FOUND))
-				.thenThrow(new NotFoundException("NOT FOUND: " + PRODUCT_ID_NOT_FOUND));
+				.thenReturn(Mono.error(new NotFoundException("NOT FOUND: " + PRODUCT_ID_NOT_FOUND)));
 
 		when(compositeIntegration.getProduct(PRODUCT_ID_INVALID))
-				.thenThrow(new InvalidInputException("INVALID: " + PRODUCT_ID_INVALID));
+				.thenReturn(Mono.error(new InvalidInputException("INVALID: " + PRODUCT_ID_INVALID)));
 	}
 
 	@Test
@@ -60,6 +75,7 @@ class ProductCompositeServiceApplicationTests {
 
 	@Test
 	void getProductById() {
+
 		client.get()
 				.uri("/product-composite/" + PRODUCT_ID_OK)
 				.accept(APPLICATION_JSON)
@@ -74,6 +90,7 @@ class ProductCompositeServiceApplicationTests {
 
 	@Test
 	void getProductNotFound() {
+
 		client.get()
 				.uri("/product-composite/" + PRODUCT_ID_NOT_FOUND)
 				.accept(APPLICATION_JSON)
@@ -87,6 +104,7 @@ class ProductCompositeServiceApplicationTests {
 
 	@Test
 	void getProductInvalidInput() {
+
 		client.get()
 				.uri("/product-composite/" + PRODUCT_ID_INVALID)
 				.accept(APPLICATION_JSON)
