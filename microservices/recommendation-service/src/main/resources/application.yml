@@ -75,3 +75,8 @@ spring.cloud.stream.bindings.messageProcessor-in-0.consumer.instance-index: 0
 ---
 spring.config.activate.on-profile: streaming_instance_1
 spring.cloud.stream.bindings.messageProcessor-in-0.consumer.instance-index: 1
+
+---
+spring.config.activate.on-profile: kafka
+spring.cloud.stream.default-binder: kafka
+management.health.rabbit.enabled: false
