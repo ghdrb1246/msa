@@ -1,6 +1,8 @@
 package se.magnus.microservices.core.recommendation.services;
 
 import java.util.function.Consumer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import se.magnus.api.core.recommendation.Recommendation;
@@ -10,6 +12,7 @@ import se.magnus.api.exceptions.EventProcessingException;
 
 @Configuration
 public class MessageProcessorConfig {
+    private static final Logger LOG = LoggerFactory.getLogger(MessageProcessorConfig.class);
     private final RecommendationService recommendationService;
 
     public MessageProcessorConfig(RecommendationService recommendationService) {
@@ -30,6 +33,7 @@ public class MessageProcessorConfig {
                     throw new EventProcessingException("Incorrect event type: " +
                             event.getEventType() + ", expected a CREATE or DELETE event");
             }
+            LOG.debug("Processed event: {} for productId: {}", event.getEventType(), event.getKey());
         };
     }
 }
