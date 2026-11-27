@@ -14,8 +14,9 @@ public class RecommendationServiceApplication {
 
 	public static void main(String[] args) {
 		ConfigurableApplicationContext ctx = SpringApplication.run(RecommendationServiceApplication.class, args);
-		String host = ctx.getEnvironment().getProperty("spring.mongodb.host", "localhost");
-		String port = ctx.getEnvironment().getProperty("spring.mongodb.port", "27017");
-		LOG.info("MongoDB connection settings: {}:{}", host, port);
+
+		String mongodDbHost = ctx.getEnvironment().getProperty("spring.data.mongodb.host");
+		String mongodDbPort = ctx.getEnvironment().getProperty("spring.data.mongodb.port");
+		LOG.info("Connected to MongoDb: " + mongodDbHost + ":" + mongodDbPort);
 	}
 }

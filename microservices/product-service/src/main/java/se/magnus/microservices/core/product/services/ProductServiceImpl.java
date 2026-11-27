@@ -52,9 +52,8 @@ public class ProductServiceImpl implements ProductService {
         Product response = mapper.entityToApi(entity);
         response.setServiceAddress(serviceUtil.getServiceAddress());
 
-        LOG.debug("getProduct: found productId: {}", response.getProductId());
-
-        return response;
+        LOG.debug("/product return the found product for productId={}", productId);
+        return new Product(productId, "name-" + productId, 123, serviceUtil.getServiceAddress());
     }
 
     @Override

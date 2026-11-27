@@ -19,8 +19,8 @@ public class ReviewServiceImpl implements ReviewService {
     private final ReviewMapper mapper;
     private final ServiceUtil serviceUtil;
 
-    public ReviewServiceImpl(ReviewRepository repository, ReviewMapper mapper, ServiceUtil serviceUtil) {
-        this.repository = repository;
+    public ReviewServiceImpl(ReviewRepository reviewRepository, ReviewMapper mapper, ServiceUtil serviceUtil) {
+        this.repository = reviewRepository;
         this.mapper = mapper;
         this.serviceUtil = serviceUtil;
     }
@@ -31,12 +31,12 @@ public class ReviewServiceImpl implements ReviewService {
             ReviewEntity entity = mapper.apiToEntity(body);
             ReviewEntity newEntity = repository.save(entity);
 
-            LOG.debug("createReview: created a review entity: {}/{}", body.getProductId(), body.getReviewId());
-            return mapper.entityToApi(newEntity);
+            LOG.debug("createReview: created a review entity: {}/{}", body.getProductId() + ", Review Id: " + body.getReviewId());
 
+            return mapper.entityToApi(newEntity);
         }
-        catch (DataIntegrityViolationException dive) {
-            throw new InvalidInputException("Duplicate key, Product Id: " + body.getProductId() + ", Review Id:" + body.getReviewId());
+        catch (DataIntegrityViolationException e) {
+            throw new InvalidInputException("Duplicate key, Product Id: " + body.getProductId() + ", Review Id: " + body.getReviewId());
         }
     }
 
@@ -50,7 +50,7 @@ public class ReviewServiceImpl implements ReviewService {
         List<Review> list = mapper.entityListToApiList(entityList);
         list.forEach(e -> e.setServiceAddress(serviceUtil.getServiceAddress()));
 
-        LOG.debug("getReviews: response size: {}", list.size());
+        LOG.debug("/reviews response size: {}", list.size());
 
         return list;
     }

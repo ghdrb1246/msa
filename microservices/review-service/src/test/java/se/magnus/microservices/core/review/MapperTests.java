@@ -1,14 +1,17 @@
 package se.magnus.microservices.core.review;
 
-import static org.junit.jupiter.api.Assertions.*;
-
-import java.util.Collections;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
 import se.magnus.api.core.review.Review;
 import se.magnus.microservices.core.review.persistence.ReviewEntity;
 import se.magnus.microservices.core.review.services.ReviewMapper;
+
+import java.util.Collections;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class MapperTests {
     private ReviewMapper mapper = Mappers.getMapper(ReviewMapper.class);
@@ -18,7 +21,6 @@ class MapperTests {
         assertNotNull(mapper);
         Review api = new Review(1, 2, "a", "s", "C", "adr");
         ReviewEntity entity = mapper.apiToEntity(api);
-
         assertEquals(api.getProductId(), entity.getProductId());
         assertEquals(api.getReviewId(), entity.getReviewId());
         assertEquals(api.getAuthor(), entity.getAuthor());
@@ -26,7 +28,6 @@ class MapperTests {
         assertEquals(api.getContent(), entity.getContent());
 
         Review api2 = mapper.entityToApi(entity);
-
         assertEquals(api.getProductId(), api2.getProductId());
         assertEquals(api.getReviewId(), api2.getReviewId());
         assertEquals(api.getAuthor(), api2.getAuthor());
@@ -38,7 +39,6 @@ class MapperTests {
     @Test
     void mapperListTests() {
         assertNotNull(mapper);
-
         Review api = new Review(1, 2, "a", "s", "C", "adr");
         List<Review> apiList = Collections.singletonList(api);
 

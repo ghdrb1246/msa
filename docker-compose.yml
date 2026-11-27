@@ -41,7 +41,7 @@ services:
     image: mysql:9.2.0
     mem_limit: 512m
     ports:
-      - "127.0.0.1:3306:3306"
+      - "127.0.0.1:3307:3307"
     environment:
       - MYSQL_ROOT_PASSWORD=rootpwd
       - MYSQL_DATABASE=review-db

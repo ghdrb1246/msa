@@ -1,13 +1,12 @@
 package se.magnus.microservices.core.review;
 
-import java.time.Duration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.testcontainers.mysql.MySQLContainer;
+import org.testcontainers.containers.JdbcDatabaseContainer;
+import org.testcontainers.containers.MySQLContainer;
 
 public abstract class MySqlTestBase {
     @ServiceConnection
-    private static final MySQLContainer database =
-            new MySQLContainer("mysql:9.2.0").withStartupTimeout(Duration.ofSeconds(300));
+    static final JdbcDatabaseContainer database = new MySQLContainer("mysql:9.2.0").withStartupTimeoutSeconds(300);
 
     static {
         database.start();

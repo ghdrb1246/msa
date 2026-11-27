@@ -50,7 +50,7 @@ public class RecommendationServiceImpl implements RecommendationService {
         List<Recommendation> list = mapper.entityListToApiList(entityList);
         list.forEach(e -> e.setServiceAddress(serviceUtil.getServiceAddress()));
 
-        LOG.debug("getRecommendations: response size: {}", list.size());
+        LOG.debug("/recommendation response size: {}", list.size());
 
         return list;
     }

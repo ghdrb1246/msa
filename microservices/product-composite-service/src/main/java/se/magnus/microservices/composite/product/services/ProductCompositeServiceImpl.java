@@ -19,7 +19,7 @@ import se.magnus.util.http.ServiceUtil;
 public class ProductCompositeServiceImpl implements ProductCompositeService {
     private static final Logger LOG = LoggerFactory.getLogger(ProductCompositeServiceImpl.class);
     private final ServiceUtil serviceUtil;
-    private final ProductCompositeIntegration integration;
+    private ProductCompositeIntegration integration;
 
     public ProductCompositeServiceImpl(
             ServiceUtil serviceUtil,

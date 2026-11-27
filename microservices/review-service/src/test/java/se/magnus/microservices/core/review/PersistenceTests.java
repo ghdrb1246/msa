@@ -16,11 +16,12 @@ import org.springframework.transaction.annotation.Transactional;
 import se.magnus.microservices.core.review.persistence.ReviewEntity;
 import se.magnus.microservices.core.review.persistence.ReviewRepository;
 
-@DataJpaTest(properties = "spring.jpa.hibernate.ddl-auto=create-drop")
+@DataJpaTest
 @Transactional(propagation = NOT_SUPPORTED)
 class PersistenceTests extends MySqlTestBase {
     @Autowired
     private ReviewRepository repository;
+
     private ReviewEntity savedEntity;
 
     @BeforeEach
@@ -35,7 +36,6 @@ class PersistenceTests extends MySqlTestBase {
 
     @Test
     void create() {
-
         ReviewEntity newEntity = new ReviewEntity(1, 3, "a", "s", "c");
         repository.save(newEntity);
 
@@ -63,10 +63,10 @@ class PersistenceTests extends MySqlTestBase {
 
     @Test
     void getByProductId() {
-        List<ReviewEntity> entityList = repository.findByProductId(savedEntity.getProductId());
+        List<ReviewEntity> entitiyList = repository.findByProductId(savedEntity.getProductId());
 
-        assertThat(entityList, hasSize(1));
-        assertEqualsReview(savedEntity, entityList.get(0));
+        assertThat(entitiyList, hasSize(1));
+        assertEqualsReview(savedEntity, entitiyList.get(0));
     }
 
     @Test
@@ -75,7 +75,6 @@ class PersistenceTests extends MySqlTestBase {
             ReviewEntity entity = new ReviewEntity(1, 2, "a", "s", "c");
             repository.save(entity);
         });
-
     }
 
     @Test
@@ -97,12 +96,12 @@ class PersistenceTests extends MySqlTestBase {
     }
 
     private void assertEqualsReview(ReviewEntity expectedEntity, ReviewEntity actualEntity) {
-        assertEquals(expectedEntity.getId(),        actualEntity.getId());
-        assertEquals(expectedEntity.getVersion(),   actualEntity.getVersion());
+        assertEquals(expectedEntity.getId(), actualEntity.getId());
+        assertEquals(expectedEntity.getVersion(), actualEntity.getVersion());
         assertEquals(expectedEntity.getProductId(), actualEntity.getProductId());
-        assertEquals(expectedEntity.getReviewId(),  actualEntity.getReviewId());
-        assertEquals(expectedEntity.getAuthor(),    actualEntity.getAuthor());
-        assertEquals(expectedEntity.getSubject(),   actualEntity.getSubject());
-        assertEquals(expectedEntity.getContent(),   actualEntity.getContent());
+        assertEquals(expectedEntity.getReviewId(), actualEntity.getReviewId());
+        assertEquals(expectedEntity.getAuthor(), actualEntity.getAuthor());
+        assertEquals(expectedEntity.getSubject(), actualEntity.getSubject());
+        assertEquals(expectedEntity.getContent(), actualEntity.getContent());
     }
 }

@@ -11,10 +11,11 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Setter
 @Document(collection = "products")
 public class ProductEntity {
+    @Id
+    private String id;
 
-    @Id private String id;
-
-    @Version private Integer version;
+    @Version
+    private Integer version;
 
     @Indexed(unique = true)
     private int productId;
